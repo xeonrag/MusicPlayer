@@ -74,21 +74,23 @@ async def start_stream(song: Song, lang):
         )
         return await start_stream(song, lang)
     except Exception as e:
-        # Handle any other exceptions that might occur
         print(f"Error starting stream: {e}")
-        # Try to create group call for other call-related errors
-        if "call" in str(e).lower():
-            peer = await app.resolve_peer(chat.id)
-            await app.invoke(
-                CreateGroupCall(
-                    peer=InputPeerChannel(
-                        channel_id=peer.channel_id,
-                        access_hash=peer.access_hash,
-                    ),
-                    random_id=app.rnd_id() // 9000000000,
+        if "call" in str(e).lower() or "group" in str(e).lower():
+            try:
+                peer = await app.resolve_peer(chat.id)
+                await app.invoke(
+                    CreateGroupCall(
+                        peer=InputPeerChannel(
+                            channel_id=peer.channel_id,
+                            access_hash=peer.access_hash,
+                        ),
+                        random_id=app.rnd_id() // 9000000000,
+                    )
                 )
-            )
-            return await start_stream(song, lang)
+                return await start_stream(song, lang)
+            except Exception as create_error:
+                print(f"Error creating group call: {create_error}")
+                raise
         raise
     
     await set_title(chat.id, song.title, client=app)
